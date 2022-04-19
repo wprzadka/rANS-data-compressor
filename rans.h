@@ -13,11 +13,12 @@ class RANS {
     const uint8_t SYMBOLS = 4;
     const uint32_t MASK = (1 << SYMBOLS) - 1;
 
+public:
     std::map<char, uint32_t> frequencies;
     std::map<char, uint32_t> accumulated;
 
-public:
     void init(const std::string& data);
+    void init(const std::map<char, uint32_t> freq);
     uint64_t encode(const std::string& data);
     std::string decode(uint64_t code);
 
