@@ -61,7 +61,7 @@ void RANS::init(const std::string &data) {
     accumulated = compute_cumulative_freq();
 }
 
-void RANS::init(const std::map<char, uint32_t> freq) {
+void RANS::init(const std::map<char, uint32_t>& freq) {
     frequencies = freq;
     accumulated = compute_cumulative_freq();
 }

@@ -18,7 +18,7 @@ public:
     std::map<char, uint32_t> accumulated;
 
     void init(const std::string& data);
-    void init(const std::map<char, uint32_t> freq);
+    void init(const std::map<char, uint32_t>& freq);
     uint64_t encode(const std::string& data);
     std::string decode(uint64_t code);
 
