@@ -8,43 +8,48 @@
 #include <cassert>
 #include "rans.h"
 
+static const uint8_t BLOCK_SIZE_BYTES = 2;
+static const uint8_t SYMBOL_FREQ_BYTES = 3;
 
 void write_symbol_freqencies(const std::map<char, uint32_t>& freqs, std::ofstream& file){
 
-//    write number of symbols
-    char* buffor = new char[3];
-    buffor[0] = static_cast<char>(freqs.size() & 255);
-    file.write(buffor, 1);
+    // Write number of symbols
+    char* mem_buff = new char[SYMBOL_FREQ_BYTES];
+    mem_buff[0] = static_cast<char>(freqs.size() & 255);
+    file.write(mem_buff, 1);
 
-//    write symbols - frequency pairs
+    // Write symbols - frequency pairs
     for (const auto& pair : freqs){
-        buffor[0] = pair.first;
+        mem_buff[0] = pair.first;
         assert(pair.second < (1 << 16));
-        buffor[1] = static_cast<char>((pair.second >> 8) & 255);
-        buffor[2] = static_cast<char>(pair.second & 255);
-        file.write(buffor, 3);
+        for (int i = 1; i < SYMBOL_FREQ_BYTES; ++i) {
+            mem_buff[i] = static_cast<char>((pair.second >> ((SYMBOL_FREQ_BYTES - 1 - i) << 3)) & 255);
+        }
+        file.write(mem_buff, SYMBOL_FREQ_BYTES);
     }
-    delete[] buffor;
+    delete[] mem_buff;
 }
 
 std::map<char, uint32_t> read_symbol_frequencies(std::ifstream& file){
-    char* mem_buffor = new char[3];
-    file.read(mem_buffor, 1);
-    char symbols = mem_buffor[0];
+    char* mem_buff = new char[SYMBOL_FREQ_BYTES];
+    file.read(mem_buff, 1);
+    char symbols = mem_buff[0];
 
     std::map<char, uint32_t> freqs{};
     while(symbols > 0){
-        file.read(mem_buffor, 3);
-        uint32_t freq = (static_cast<unsigned char>(mem_buffor[1] & 255) << 8) + static_cast<unsigned char>((mem_buffor[2] & 255));
-        freqs[mem_buffor[0]] = freq;
+        file.read(mem_buff, SYMBOL_FREQ_BYTES);
+        uint32_t freq = 0;
+        for (int i = 1; i < SYMBOL_FREQ_BYTES; ++i){
+            freq <<= 8;
+            freq += static_cast<unsigned char>(mem_buff[i] & 255);
+        }
+        freqs[mem_buff[0]] = freq;
         --symbols;
     }
 
-    delete[] mem_buffor;
+    delete[] mem_buff;
     return freqs;
 }
-
-static const uint8_t BLOCK_SIZE_BYTES = 2;
 
 void write_size_of_block(std::ofstream& file, uint32_t size){
     assert(size < (1 << (BLOCK_SIZE_BYTES * 8)));
