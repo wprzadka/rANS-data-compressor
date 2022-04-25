@@ -28,6 +28,7 @@ std::map<char, uint32_t> RANS::compute_cumulative_freq(){
     return acc;
 }
 
+// TODO provide efficient implementation
 char RANS::get_symbol(uint32_t value){
     auto iter = accumulated.begin();
     char symbol = iter->first;
