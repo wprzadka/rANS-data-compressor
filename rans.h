@@ -33,8 +33,6 @@ protected:
     std::map<char, uint32_t> compute_cumulative_freq();
     void normalize_symbol_frequencies();
     char get_symbol(uint32_t value);
-
-//    void compute_symbol_frequencies(std::ifstream& input_file);
 };
 
 

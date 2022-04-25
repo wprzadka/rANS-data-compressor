@@ -100,27 +100,6 @@ std::string RANS::decode(const char* code, uint16_t size) {
     return decoded;
 }
 
-//void RANS::compute_symbol_frequencies(std::ifstream& input_file){
-//    std::map<char, uint32_t> freq{};
-//
-//    static const uint8_t BUFFOR_SIZE = 32;
-//    char* buffor = new char[BUFFOR_SIZE];
-//
-//    while(!input_file.eof()){
-//        input_file.read(buffor, BUFFOR_SIZE);
-//        int i = 0;
-//        while (i < BUFFOR_SIZE && buffor[i] != '\0') {
-//            if(freq.find(buffor[i]) == freq.end()){
-//                freq[buffor[i]] = 0;
-//            }
-//            ++freq[buffor[i]];
-//        }
-//    }
-//
-//    delete[] buffor;
-//    frequencies = freq;
-//}
-
 void RANS::normalize_symbol_frequencies(){
     // Find probabilities of symbols occurrences
     uint32_t sum_freq = 0;
