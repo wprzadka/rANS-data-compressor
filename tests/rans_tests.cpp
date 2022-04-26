@@ -11,14 +11,15 @@ class RANS_Test: public ::testing::Test{
 
 TEST(RANS_Test, GetSymbolValuesTest){
     std::map<char, uint32_t> frequencies = {
-            {'A', 2}, {'B', 4}, {'C', 1}
+            {'A', 2}, {'B', 4}, {'C', 2}
     };
     RANS rans{};
     rans.init_frequencies(frequencies);
 
-    ASSERT_EQ('A', rans.get_symbol(1));
-    ASSERT_EQ('B', rans.get_symbol(5));
-    ASSERT_EQ('C', rans.get_symbol(7));
+    char symbols[] = {'A', 'A', 'B', 'B', 'B', 'B', 'C', 'C'};
+    for (int i = 0; i < 8; ++i) {
+        ASSERT_EQ(symbols[i], rans.get_symbol(i));
+    };
 }
 
 int main(int argc, char** argv){
