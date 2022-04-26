@@ -8,8 +8,11 @@
 
 #include <cstdint>
 #include <map>
+#include "gtest/gtest.h"
 
 class RANS {
+    FRIEND_TEST(RANS_Test, GetSymbolValuesTest);
+
     const uint8_t N_VALUE = 12;
     const uint32_t MASK = (1 << N_VALUE) - 1;
 
