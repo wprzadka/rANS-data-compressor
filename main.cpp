@@ -32,10 +32,14 @@ void write_symbol_freqencies(const std::map<char, uint32_t>& freqs, std::ofstrea
 
 std::map<char, uint32_t> read_symbol_frequencies(std::ifstream& file){
     char* mem_buff = new char[SYMBOL_FREQ_BYTES];
+    std::map<char, uint32_t> freqs{};
+
     file.read(mem_buff, 1);
+    if(file.eof()){
+        return freqs;
+    }
     char symbols = mem_buff[0];
 
-    std::map<char, uint32_t> freqs{};
     while(symbols > 0){
         file.read(mem_buff, SYMBOL_FREQ_BYTES);
         uint32_t freq = 0;
@@ -84,7 +88,7 @@ int encode_file(const std::string& input_file, const std::string& output_file = 
     }
     RANS rans{};
     char* mem_buff = new char[rans.BLOCK_SIZE];
-    while(!file_reader.eof()){
+    while(file_reader){
         // Read next block
         file_reader.read(mem_buff, rans.BLOCK_SIZE);
         uint32_t bits_read = file_reader.gcount();
@@ -114,6 +118,10 @@ int decode_file(const std::string& input_file, const std::string& output_file = 
     while(file_reader){
         // Read frequencies
         std::map<char, uint32_t> freqs = read_symbol_frequencies(file_reader);
+        if(freqs.empty()){
+            // end of file
+            break;
+        }
         rans.init_frequencies(freqs);
         // Read number of bytes in block
         uint32_t bytes_num = read_size_of_block(file_reader);
