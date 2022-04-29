@@ -19,22 +19,26 @@ class RANS {
 
     const uint8_t STATE_BITS = 32;
     const uint8_t HALF_STATE_BITS = STATE_BITS >> 1;
-
 public:
+    const static uint8_t MAX_SYMBOL = 255;
+    const static uint8_t NEGATIVE_SYMBOLS_NUM = 127;
     const uint16_t BLOCK_SIZE = 8192;
 
-    std::map<char, uint32_t> frequencies;
-    std::map<char, uint32_t> accumulated;
+    std::array<uint32_t, MAX_SYMBOL> frequencies{};
+    std::array<uint32_t, MAX_SYMBOL> accumulated{};
+
+    inline uint32_t get_frequency(char symbol) {return frequencies[static_cast<uint16_t>(symbol) + NEGATIVE_SYMBOLS_NUM];};
+    inline uint32_t get_accumulated(char symbol) {return accumulated[static_cast<uint16_t>(symbol) + NEGATIVE_SYMBOLS_NUM];};
 
     void prepare_frequencies(const char *data, uint16_t size);
-    void init_frequencies(const std::map<char, uint32_t> &freqs);
+    void init_frequencies(const std::array<uint32_t, MAX_SYMBOL> &freqs);
 
     std::string encode(const char* data, uint16_t size);
     std::string decode(const char* state, uint16_t size);
 
 protected:
-    std::map<char, uint32_t> get_frequencies(const char *word, uint16_t size);
-    std::map<char, uint32_t> compute_cumulative_freq();
+    std::array<uint32_t, MAX_SYMBOL> compute_frequencies(const char *word, uint16_t size);
+    std::array<uint32_t, MAX_SYMBOL> compute_cumulative_freq();
     void normalize_symbol_frequencies();
     char get_symbol(uint32_t value);
 };

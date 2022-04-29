@@ -5,42 +5,30 @@
 #include "rans.h"
 #include <bits/stdc++.h>
 
-std::map<char, uint32_t> RANS::get_frequencies(const char* word, uint16_t size){
-    std::map<char, uint32_t> freq{};
-
+std::array<uint32_t, RANS::MAX_SYMBOL> RANS::compute_frequencies(const char* word, uint16_t size){
+    std::array<uint32_t, RANS::MAX_SYMBOL> freq{};
+    std::fill(freq.begin(), freq.end(), 0);
     for (int i = 0; i < size; ++i) {
-        if(freq.find(word[i]) == freq.end()){
-            freq[word[i]] = 0;
-        }
-        ++freq[word[i]];
+        ++freq[word[i] + NEGATIVE_SYMBOLS_NUM];
     }
-
     return freq;
 }
 
-std::map<char, uint32_t> RANS::compute_cumulative_freq(){
-    std::map<char, uint32_t> acc;
-    uint32_t prev_sum = 0;
-    for (const auto& iter : frequencies){
-        acc[iter.first] = prev_sum;
-        prev_sum += iter.second;
-    }
+std::array<uint32_t, RANS::MAX_SYMBOL> RANS::compute_cumulative_freq(){
+    std::array<uint32_t, RANS::MAX_SYMBOL> acc{};
+    acc[0] = 0;
+    std::partial_sum(frequencies.begin(), frequencies.end() - 1, acc.begin() + 1);
     return acc;
 }
 
-// TODO provide efficient implementation
 char RANS::get_symbol(uint32_t value){
-    auto iter = accumulated.begin();
-    char symbol = iter->first;
-    while(iter->second <= value && iter != accumulated.end()){
-        symbol = iter->first;
-        ++iter;
-    }
+    auto ptr = std::upper_bound(accumulated.begin(), accumulated.end(), value);
+    char symbol = static_cast<char>((ptr - accumulated.begin() - 1) - NEGATIVE_SYMBOLS_NUM);
     return symbol;
 }
 
 void RANS::prepare_frequencies(const char* data, uint16_t size){
-    frequencies = get_frequencies(data, size);
+    frequencies = compute_frequencies(data, size);
     normalize_symbol_frequencies();
     accumulated = compute_cumulative_freq();
 }
@@ -51,14 +39,14 @@ std::string RANS::encode(const char* data, uint16_t size) {
 
     // Encode data
     for (int i = size - 1; i >= 0; --i) {
-        uint32_t freq = frequencies[data[i]];
+        uint32_t freq = get_frequency(data[i]);
         while (state >= freq * (1 << (STATE_BITS - N_VALUE))){
             encoded += static_cast<char>(state & 255);
             state >>= 8;
             encoded += static_cast<char>(state & 255);
             state >>= 8;
         }
-        state = ((state / freq) << N_VALUE) + (state % freq) + accumulated[data[i]];
+        state = ((state / freq) << N_VALUE) + (state % freq) + get_accumulated(data[i]);
     }
 
     // Write state at the end of encoding
@@ -89,7 +77,7 @@ std::string RANS::decode(const char* code, uint16_t size) {
         char s = get_symbol(state & MASK);
 
         decoded += s;
-        state = frequencies[s] * (state >> N_VALUE) + (state & MASK) - accumulated[s];
+        state = get_frequency(s) * (state >> N_VALUE) + (state & MASK) - get_accumulated(s);
 
         while (state < (1 << HALF_STATE_BITS) && idx < size) {
             state <<= 8;
@@ -104,12 +92,14 @@ std::string RANS::decode(const char* code, uint16_t size) {
 void RANS::normalize_symbol_frequencies(){
     // Find probabilities of symbols occurrences
     uint32_t sum_freq = 0;
-    for (auto& pair : frequencies){
-        sum_freq += pair.second;
+    for (uint32_t val : frequencies) {
+        sum_freq += val;
     }
-    std::map<char, double> probabilities{};
-    for (auto& pair : frequencies){
-        probabilities[pair.first] = static_cast<double>(pair.second) / sum_freq;
+    std::map<unsigned char, double> probabilities{};
+    for (unsigned char unsigned_symbol = 0; unsigned_symbol < MAX_SYMBOL; ++unsigned_symbol){
+        if (frequencies[unsigned_symbol] != 0) {
+            probabilities[unsigned_symbol] = static_cast<double>(frequencies[unsigned_symbol]) / sum_freq;
+        }
     }
     // Normalize occurrence probabilities to fractions of 2^N_VALUE
     sum_freq = 0;
@@ -120,15 +110,19 @@ void RANS::normalize_symbol_frequencies(){
         sum_freq += new_freq;
     }
     // Ensure that frequencies sums to 2^N
-    auto fst = frequencies.begin();
-    frequencies[fst->first] += (1 << N_VALUE) - sum_freq;
+    auto iter = std::find_if(
+            frequencies.begin(),
+            frequencies.end(),
+            [](uint32_t x){return x > 0;}
+            );
+    *iter += (1 << N_VALUE) - sum_freq;
     // Check if all frequencies are in valid range
-    for(auto p : frequencies){
-        assert(p.second > 0 && p.second <= (1 << N_VALUE));
+    for(auto val : frequencies){
+        assert(val <= (1 << N_VALUE));
     }
 }
 
-void RANS::init_frequencies(const std::map<char, uint32_t>& freqs) {
+void RANS::init_frequencies(const std::array<uint32_t, RANS::MAX_SYMBOL>& freqs) {
     frequencies = freqs;
     accumulated = compute_cumulative_freq();
 }
