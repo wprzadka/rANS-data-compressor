@@ -20,6 +20,10 @@ public:
             "It showed a lady fitted out with a fur hat and fur boa who sat upright, raising a heavy fur muff that covered the whole of her lower arm towards the viewer.\n"
             "Gregor then turned to look out the window at the dull weather. Drops";
     const uint16_t encoded_text_size = 588;
+
+    const std::map<char, uint32_t> frequencies = {
+            {'\n', 52}, {' ', 728}, {'"', 7}, {'\'', 7}, {',', 37}, {'-', 11}, {'.', 37}, {'?', 3}, {'A', 3}, {'D', 3}, {'G', 7}, {'H', 11}, {'I', 7}, {'O', 3}, {'S', 7}, {'T', 3}, {'W', 3}, {'a', 292}, {'b', 53}, {'c', 53}, {'d', 166}, {'e', 379}, {'f', 98}, {'g', 53}, {'h', 197}, {'i', 197}, {'k', 18}, {'l', 201}, {'m', 109}, {'n', 159}, {'o', 238}, {'p', 49}, {'r', 189}, {'s', 166}, {'t', 269}, {'u', 102}, {'v', 34}, {'w', 75}, {'x', 3}, {'y', 60}, {'z', 7},
+    };
 };
 
 TEST_F(RANS_Coding_Test, encode){
@@ -36,11 +40,45 @@ TEST_F(RANS_Coding_Test, encode){
     }
     char* encoded_text = new char[encoded_text_size];
     exact.read(encoded_text, encoded_text_size);
+    uint32_t read_bytes = exact.gcount();
+    exact.close();
+    if (read_bytes != encoded_text_size) {
+        printf("Not all input has been read\n");
+        FAIL();
+    }
 
     for (int i = 0; i < encoded_text_size; ++i){
         ASSERT_EQ(encoded_text[i], encoded[i]);
     }
     delete[] encoded_text;
+}
+
+
+TEST_F(RANS_Coding_Test, decode){
+    RANS rans{};
+
+    std::ifstream input("encoded.bin", std::ios::binary | std::ios::in);
+    if (!input){
+        printf("Can't open file\n");
+        FAIL();
+    }
+    char* encoded_text = new char[encoded_text_size];
+    input.read(encoded_text, encoded_text_size);
+    uint32_t read_bytes = input.gcount();
+    input.close();
+    if (read_bytes != encoded_text_size) {
+        printf("Not all input has been read\n");
+        FAIL();
+    }
+    rans.init_frequencies(frequencies);
+
+    std::string decoded = rans.decode(encoded_text, encoded_text_size);
+
+    delete[] encoded_text;
+    ASSERT_EQ(plain_text_size, decoded.size());
+    for (int i = 0; i < encoded_text_size; ++i){
+        ASSERT_EQ(plain_text[i], decoded[i]);
+    }
 }
 
 TEST(RANS_Test, prepare_frequencies){
