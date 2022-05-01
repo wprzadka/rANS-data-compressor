@@ -14,15 +14,16 @@ class RANS {
     FRIEND_TEST(RANS_Test, get_symbol);
     FRIEND_TEST(RANS_Test, prepare_frequencies);
 
-    const uint8_t N_VALUE = 12;
-    const uint32_t MASK = (1 << N_VALUE) - 1;
-
-    const uint8_t STATE_BITS = 32;
-    const uint8_t HALF_STATE_BITS = STATE_BITS >> 1;
 public:
+    const static uint8_t N_VALUE = 12;
+    const static uint32_t MASK = (1 << N_VALUE) - 1;
+
+    const static uint8_t STATE_BITS = 32;
+    const static uint8_t HALF_STATE_BITS = STATE_BITS >> 1;
+
     const static uint8_t MAX_SYMBOL = 255;
     const static uint8_t NEGATIVE_SYMBOLS_NUM = 127;
-    const uint16_t BLOCK_SIZE = 8192;
+    const static uint16_t BLOCK_SIZE = 8192;
 
     std::array<uint32_t, MAX_SYMBOL> frequencies{};
     std::array<uint32_t, MAX_SYMBOL> accumulated{};

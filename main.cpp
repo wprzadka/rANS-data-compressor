@@ -31,9 +31,9 @@ void write_symbol_freqencies(const std::array<uint32_t, RANS::MAX_SYMBOL>& freqs
             continue;
         }
         mem_buff[0] = static_cast<int>(symbol) - RANS::NEGATIVE_SYMBOLS_NUM;
-        assert(freqs[symbol] < (1 << 16));
+        assert(freqs[symbol] < (1 << RANS::N_VALUE));
         for (int i = 1; i < SYMBOL_FREQ_BYTES; ++i) {
-                mem_buff[i] = static_cast<char>((freqs[symbol] >> ((SYMBOL_FREQ_BYTES - 1 - i) << 3)) & 255);
+            mem_buff[i] = static_cast<char>((freqs[symbol] >> ((SYMBOL_FREQ_BYTES - 1 - i) << 3)) & 255);
         }
         file.write(mem_buff, SYMBOL_FREQ_BYTES);
     }
