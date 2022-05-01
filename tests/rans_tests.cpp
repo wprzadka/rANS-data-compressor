@@ -21,9 +21,22 @@ public:
             "Gregor then turned to look out the window at the dull weather. Drops";
     const uint16_t encoded_text_size = 588;
 
-    const std::map<char, uint32_t> frequencies = {
-            {'\n', 52}, {' ', 728}, {'"', 7}, {'\'', 7}, {',', 37}, {'-', 11}, {'.', 37}, {'?', 3}, {'A', 3}, {'D', 3}, {'G', 7}, {'H', 11}, {'I', 7}, {'O', 3}, {'S', 7}, {'T', 3}, {'W', 3}, {'a', 292}, {'b', 53}, {'c', 53}, {'d', 166}, {'e', 379}, {'f', 98}, {'g', 53}, {'h', 197}, {'i', 197}, {'k', 18}, {'l', 201}, {'m', 109}, {'n', 159}, {'o', 238}, {'p', 49}, {'r', 189}, {'s', 166}, {'t', 269}, {'u', 102}, {'v', 34}, {'w', 75}, {'x', 3}, {'y', 60}, {'z', 7},
-    };
+    std::array<uint32_t, 255> frequencies{};
+
+    RANS_Coding_Test(){
+        const std::map<char, uint32_t> temp_freqs = {
+                {'\n', 52}, {' ', 728}, {'"', 7}, {'\'', 7}, {',', 37}, {'-', 11},
+                {'.', 37}, {'?', 3}, {'A', 3}, {'D', 3}, {'G', 7}, {'H', 11},
+                {'I', 7}, {'O', 3}, {'S', 7}, {'T', 3}, {'W', 3}, {'a', 292},
+                {'b', 53}, {'c', 53}, {'d', 166}, {'e', 379}, {'f', 98}, {'g', 53},
+                {'h', 197}, {'i', 197}, {'k', 18}, {'l', 201}, {'m', 109}, {'n', 159},
+                {'o', 238}, {'p', 49}, {'r', 189}, {'s', 166}, {'t', 269}, {'u', 102},
+                {'v', 34}, {'w', 75}, {'x', 3}, {'y', 60}, {'z', 7},
+        };
+        for (auto p : temp_freqs){
+            frequencies[p.first + 127] = p.second;
+        }
+    }
 };
 
 TEST_F(RANS_Coding_Test, encode){
@@ -91,38 +104,41 @@ TEST(RANS_Test, prepare_frequencies){
     rans.prepare_frequencies(data, SIZE);
 
     for (const auto& s : symbols){
-        ASSERT_EQ(s.second, rans.frequencies[s.first]);
+        ASSERT_EQ(s.second, rans.get_frequency(s.first));
     }
     uint32_t accumulated = 0;
     for (const auto& s : symbols){
-        ASSERT_EQ(accumulated, rans.accumulated[s.first]);
+        ASSERT_EQ(accumulated, rans.get_accumulated(s.first));
         accumulated += s.second;
     }
     delete[] data;
 }
 
 TEST(RANS_Test, init_frequencies){
-    std::map<char, uint32_t> frequencies = {
-            {'A', 2}, {'B', 4}, {'C', 2}
-    };
+    char symbols[] = {'A', 'B', 'C'};
+    std::array<uint32_t, RANS::MAX_SYMBOL> frequencies{};
+    frequencies['A' + 127] = 2;
+    frequencies['B' + 127] = 4;
+    frequencies['C' + 127] = 2;
     RANS rans{};
 
     rans.init_frequencies(frequencies);
 
-    for (const auto& pair : frequencies){
-        ASSERT_EQ(pair.second, rans.frequencies[pair.first]);
+    for (char s : symbols){
+        ASSERT_EQ(frequencies[s + 127], rans.get_frequency(s));
     }
     uint32_t accumulated = 0;
-    for (const auto& pair : frequencies){
-        ASSERT_EQ(accumulated, rans.accumulated[pair.first]);
-        accumulated += pair.second;
+    for (char s : symbols){
+        ASSERT_EQ(accumulated, rans.get_accumulated(s));
+        accumulated += frequencies[s + 127];
     }
 }
 
 TEST(RANS_Test, get_symbol){
-    std::map<char, uint32_t> frequencies = {
-            {'A', 2}, {'B', 4}, {'C', 2}
-    };
+    std::array<uint32_t, RANS::MAX_SYMBOL> frequencies{};
+    frequencies['A' + 127] = 2;
+    frequencies['B' + 127] = 4;
+    frequencies['C' + 127] = 2;
     RANS rans{};
     rans.init_frequencies(frequencies);
 
