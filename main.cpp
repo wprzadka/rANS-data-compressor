@@ -167,11 +167,15 @@ int main(int argc, char** argv){
             printf("0.1");
             return 0;
         case 'h':
-            printf("possible operations:\n"
+            printf("Possible arguments:\n"
                    "-v --version\n"
+                   "    Prints current program version\n"
                    "-h --help\n"
-                   "-e --encode file_name\n"
-                   "-d --decode file_name\n");
+                   "    Prints arguments informations\n"
+                   "-e --encode file_path\n"
+                   "    Encodes file indicated by \"file_path\"\n"
+                   "-d --decode file_path\n"
+                   "    Decodes file indicated by \"file_path\"");
             return 0;
         case 'e':
             return encode_file(optarg);
