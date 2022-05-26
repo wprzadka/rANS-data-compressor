@@ -21,11 +21,18 @@ std::array<uint32_t, RANS::MAX_SYMBOL> RANS::compute_cumulative_freq(){
     return acc;
 }
 
+
+#ifdef USE_LOOKUP_TABLE
+char RANS::get_symbol(uint32_t value){
+    return symbols_lookup[value];
+}
+#else
 char RANS::get_symbol(uint32_t value){
     auto ptr = std::upper_bound(accumulated.begin(), accumulated.end(), value);
     char symbol = static_cast<char>((ptr - accumulated.begin() - 1) - NEGATIVE_SYMBOLS_NUM);
     return symbol;
 }
+#endif
 
 void RANS::prepare_frequencies(const char* data, uint16_t size){
     frequencies = compute_frequencies(data, size);
@@ -125,4 +132,13 @@ void RANS::normalize_symbol_frequencies(){
 void RANS::init_frequencies(const std::array<uint32_t, RANS::MAX_SYMBOL>& freqs) {
     frequencies = freqs;
     accumulated = compute_cumulative_freq();
+#ifdef USE_LOOKUP_TABLE
+    char symbol = SCHAR_MAX - 1;
+    for (int i = (1 << N_VALUE) - 1; i >= 0; --i) {
+        while (i < get_accumulated(symbol) && symbol > SCHAR_MIN){
+            --symbol;
+        }
+        symbols_lookup[i] = symbol;
+    }
+#endif
 }
