@@ -45,9 +45,6 @@ std::array<uint32_t, RANS::MAX_SYMBOL> read_symbol_frequencies(std::ifstream& fi
     std::array<uint32_t, RANS::MAX_SYMBOL> freqs{};
 
     file.read(mem_buff, 1);
-    if(file.eof()){
-        throw "EOF";
-    }
     unsigned char symbols = static_cast<unsigned char>(mem_buff[0]);
 
     while(symbols > 0){
@@ -125,15 +122,15 @@ int decode_file(const std::string& input_file, const std::string& output_file = 
     }
     RANS rans{};
     char* mem_buff = new char[rans.BLOCK_SIZE];
-    while(file_reader){
+    // read end of file position
+    file_reader.seekg(0, std::ifstream::end);
+    long file_length = file_reader.tellg();
+    file_reader.seekg(0, std::ifstream::beg);
+
+    while(file_reader && file_reader.tellg() != file_length){
         // Read frequencies
         std::array<uint32_t, RANS::MAX_SYMBOL> freqs{};
-        try {
-            // TODO Implement sane way of checking EOF
-            freqs = read_symbol_frequencies(file_reader);
-        }catch (...) {
-            break;
-        }
+        freqs = read_symbol_frequencies(file_reader);
         rans.init_frequencies(freqs);
         // Read number of bytes in block
         uint32_t bytes_num = read_size_of_block(file_reader);
