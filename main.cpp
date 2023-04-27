@@ -84,6 +84,7 @@ uint32_t read_size_of_block(std::ifstream& file){
         size <<= 8;
         size += mem_buff[i] & 255;
     }
+    delete[] mem_buff;
     return size;
 }
 
