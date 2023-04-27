@@ -6,6 +6,9 @@
 #include "gtest/gtest.h"
 #include "../rans.h"
 
+static const uint8_t MIN_CHAR_ABS = 128;
+
+
 class RANS_Coding_Test: public ::testing::Test{
 public:
     const uint16_t plain_text_size = 1080;
@@ -34,7 +37,7 @@ public:
                 {'v', 34}, {'w', 75}, {'x', 3}, {'y', 60}, {'z', 7},
         };
         for (auto p : temp_freqs){
-            frequencies[p.first + 127] = p.second;
+            frequencies[p.first + MIN_CHAR_ABS] = p.second;
         }
     }
 };
@@ -117,28 +120,28 @@ TEST(RANS_Test, prepare_frequencies){
 TEST(RANS_Test, init_frequencies){
     char symbols[] = {'A', 'B', 'C'};
     std::array<uint32_t, RANS::MAX_SYMBOL> frequencies{};
-    frequencies['A' + 127] = 2;
-    frequencies['B' + 127] = 4;
-    frequencies['C' + 127] = 2;
+    frequencies['A' + MIN_CHAR_ABS] = 2;
+    frequencies['B' + MIN_CHAR_ABS] = 4;
+    frequencies['C' + MIN_CHAR_ABS] = 2;
     RANS rans{};
 
     rans.init_frequencies(frequencies);
 
     for (char s : symbols){
-        ASSERT_EQ(frequencies[s + 127], rans.get_frequency(s));
+        ASSERT_EQ(frequencies[s + MIN_CHAR_ABS], rans.get_frequency(s));
     }
     uint32_t accumulated = 0;
     for (char s : symbols){
         ASSERT_EQ(accumulated, rans.get_accumulated(s));
-        accumulated += frequencies[s + 127];
+        accumulated += frequencies[s + MIN_CHAR_ABS];
     }
 }
 
 TEST(RANS_Test, get_symbol){
     std::array<uint32_t, RANS::MAX_SYMBOL> frequencies{};
-    frequencies['A' + 127] = 2;
-    frequencies['B' + 127] = 4;
-    frequencies['C' + 127] = 2;
+    frequencies['A' + MIN_CHAR_ABS] = 2;
+    frequencies['B' + MIN_CHAR_ABS] = 4;
+    frequencies['C' + MIN_CHAR_ABS] = 2;
     RANS rans{};
     rans.init_frequencies(frequencies);
 

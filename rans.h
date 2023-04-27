@@ -25,7 +25,7 @@ public:
     const static uint8_t HALF_STATE_BITS = STATE_BITS >> 1;
 
     const static uint8_t MAX_SYMBOL = 255;
-    const static uint8_t NEGATIVE_SYMBOLS_NUM = - SCHAR_MIN - 1;
+    const static uint8_t NEGATIVE_SYMBOLS_NUM = -SCHAR_MIN;
     const static uint16_t BLOCK_SIZE = 8192;
 
     std::array<uint32_t, MAX_SYMBOL> frequencies{};
