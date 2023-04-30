@@ -24,30 +24,26 @@ public:
     const static uint8_t STATE_BITS = 32;
     const static uint8_t HALF_STATE_BITS = STATE_BITS >> 1;
 
-    const static uint8_t MAX_SYMBOL = 255;
-    const static uint8_t NEGATIVE_SYMBOLS_NUM = -SCHAR_MIN;
+    const static uint16_t SYMBOLS_NUM = 256;
     const static uint16_t BLOCK_SIZE = 8192;
 
-    std::array<uint32_t, MAX_SYMBOL> frequencies{};
-    std::array<uint32_t, MAX_SYMBOL> accumulated{};
+    std::array<uint32_t, SYMBOLS_NUM> frequencies{};
+    std::array<uint32_t, SYMBOLS_NUM> accumulated{};
 
-    inline uint32_t get_frequency(char symbol) {return frequencies[static_cast<int16_t>(symbol) + NEGATIVE_SYMBOLS_NUM];};
-    inline uint32_t get_accumulated(char symbol) {return accumulated[static_cast<int16_t>(symbol) + NEGATIVE_SYMBOLS_NUM];};
+    void prepare_frequencies(const unsigned char *data, uint16_t size);
+    void init_frequencies(const std::array<uint32_t, SYMBOLS_NUM> &freqs);
 
-    void prepare_frequencies(const char *data, uint16_t size);
-    void init_frequencies(const std::array<uint32_t, MAX_SYMBOL> &freqs);
-
-    std::string encode(const char* data, uint16_t size);
-    std::string decode(const char* state, uint16_t size);
+    std::string encode(const unsigned char* data, uint16_t size);
+    std::string decode(const unsigned char* state, uint16_t size);
 
 protected:
 #ifdef USE_LOOKUP_TABLE
-    std::array<char, 1 << N_VALUE> symbols_lookup{};
+    std::array<unsigned char, 1 << N_VALUE> symbols_lookup{};
 #endif
-    std::array<uint32_t, MAX_SYMBOL> compute_frequencies(const char *word, uint16_t size);
-    std::array<uint32_t, MAX_SYMBOL> compute_cumulative_freq();
+    std::array<uint32_t, SYMBOLS_NUM> compute_frequencies(const unsigned char *word, uint16_t size);
+    std::array<uint32_t, SYMBOLS_NUM> compute_cumulative_freq();
     void normalize_symbol_frequencies();
-    char get_symbol(uint32_t value);
+    unsigned char get_symbol(uint32_t value);
 };
 
 

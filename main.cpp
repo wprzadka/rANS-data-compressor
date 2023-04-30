@@ -10,51 +10,63 @@
 #include "rans.h"
 
 static const uint8_t BLOCK_SIZE_BYTES = 2;
+static const uint8_t SYMBOLS_NUM_BYTES = 2;
 static const uint8_t SYMBOL_FREQ_BYTES = 3;
 
-void write_symbol_freqencies(const std::array<uint32_t, RANS::MAX_SYMBOL>& freqs, std::ofstream& file){
+void write_symbol_freqencies(const std::array<uint32_t, RANS::SYMBOLS_NUM>& freqs, std::ofstream& file){
 
     // Write number of symbols
     char* mem_buff = new char[SYMBOL_FREQ_BYTES];
-    uint8_t non_zero_freqs_num = std::accumulate(
+    uint16_t non_zero_freqs_num = std::accumulate(
             freqs.begin(),
             freqs.end(),
             0,
             [](uint8_t acc, uint32_t elem){ return acc + (elem > 0 ? 1 : 0); }
             );
-    mem_buff[0] = static_cast<char>(non_zero_freqs_num & 255);
-    file.write(mem_buff, 1);
+
+    for (int i = 0; i < SYMBOLS_NUM_BYTES; ++i) {
+        unsigned char val = (non_zero_freqs_num >> ((SYMBOLS_NUM_BYTES - 1 - i) << 3)) & 255;
+        mem_buff[i] = reinterpret_cast<char&>(val);
+    }
+    file.write(mem_buff, SYMBOLS_NUM_BYTES);
 
     // Write symbols - frequency pairs
-    for (unsigned char symbol = 0; symbol < RANS::MAX_SYMBOL; ++symbol){
+    for (int symbol = 0; symbol < RANS::SYMBOLS_NUM; ++symbol){
         if (freqs[symbol] == 0) {
             continue;
         }
-        mem_buff[0] = static_cast<int>(symbol) - RANS::NEGATIVE_SYMBOLS_NUM;
+        mem_buff[0] = reinterpret_cast<char&>(symbol);
         assert(freqs[symbol] < (1 << RANS::N_VALUE));
         for (int i = 1; i < SYMBOL_FREQ_BYTES; ++i) {
-            mem_buff[i] = static_cast<char>((freqs[symbol] >> ((SYMBOL_FREQ_BYTES - 1 - i) << 3)) & 255);
+            unsigned char val = (freqs[symbol] >> ((SYMBOL_FREQ_BYTES - 1 - i) << 3)) & 255;
+            mem_buff[i] = reinterpret_cast<char&>(val);
         }
         file.write(mem_buff, SYMBOL_FREQ_BYTES);
     }
     delete[] mem_buff;
 }
 
-std::array<uint32_t, RANS::MAX_SYMBOL> read_symbol_frequencies(std::ifstream& file){
+std::array<uint32_t, RANS::SYMBOLS_NUM> read_symbol_frequencies(std::ifstream& file){
     char* mem_buff = new char[SYMBOL_FREQ_BYTES];
-    std::array<uint32_t, RANS::MAX_SYMBOL> freqs{};
+    std::array<uint32_t, RANS::SYMBOLS_NUM> freqs{};
 
-    file.read(mem_buff, 1);
-    unsigned char symbols = static_cast<unsigned char>(mem_buff[0]);
+    file.read(mem_buff, SYMBOLS_NUM_BYTES);
+    int symbols = 0;
+    for (int i = 0; i < SYMBOLS_NUM_BYTES; ++i){
+        symbols <<= 8;
+        symbols += reinterpret_cast<unsigned char&>(mem_buff[i]);
+    }
 
     while(symbols > 0){
         file.read(mem_buff, SYMBOL_FREQ_BYTES);
+        // 1st byte of mem_buff contains symbol,
+        // rest of it contains frequency
         uint32_t freq = 0;
         for (int i = 1; i < SYMBOL_FREQ_BYTES; ++i){
             freq <<= 8;
-            freq += static_cast<unsigned char>(mem_buff[i] & 255);
+            freq += reinterpret_cast<unsigned char&>(mem_buff[i]);
         }
-        freqs[mem_buff[0] + RANS::NEGATIVE_SYMBOLS_NUM] = freq;
+        freqs[reinterpret_cast<unsigned char&>(mem_buff[0])] = freq;
         --symbols;
     }
 
@@ -95,15 +107,16 @@ int encode_file(const std::string& input_file, const std::string& output_file = 
         return 1;
     }
     RANS rans{};
-    char* mem_buff = new char[rans.BLOCK_SIZE];
+    char* mem_buff = new char[RANS::BLOCK_SIZE];
     while(file_reader){
         // Read next block
-        file_reader.read(mem_buff, rans.BLOCK_SIZE);
+        file_reader.read(mem_buff, RANS::BLOCK_SIZE);
+        auto* umem_buff = reinterpret_cast<unsigned char*>(mem_buff);
         uint32_t bits_read = file_reader.gcount();
         // Prepare and frequencies of symbol occurrence
-        rans.prepare_frequencies(mem_buff, bits_read);
+        rans.prepare_frequencies(umem_buff, bits_read);
         // encode block
-        std::string enc = rans.encode(mem_buff, bits_read);
+        std::string enc = rans.encode(umem_buff, bits_read);
         // save block with frequencies to file
         write_symbol_freqencies(rans.frequencies, file_writer);
         write_size_of_block(file_writer, enc.size());
@@ -122,24 +135,25 @@ int decode_file(const std::string& input_file, const std::string& output_file = 
         return 1;
     }
     RANS rans{};
-    char* mem_buff = new char[rans.BLOCK_SIZE];
+    char* mem_buff = new char[RANS::BLOCK_SIZE];
     // read end of file position
     file_reader.seekg(0, std::ifstream::end);
-    long file_length = file_reader.tellg();
+    std::streampos file_length = file_reader.tellg();
     file_reader.seekg(0, std::ifstream::beg);
 
     while(file_reader && file_reader.tellg() != file_length){
         // Read frequencies
-        std::array<uint32_t, RANS::MAX_SYMBOL> freqs{};
+        std::array<uint32_t, RANS::SYMBOLS_NUM> freqs{};
         freqs = read_symbol_frequencies(file_reader);
         rans.init_frequencies(freqs);
         // Read number of bytes in block
         uint32_t bytes_num = read_size_of_block(file_reader);
         // Read next block
         file_reader.read(mem_buff, bytes_num);
+        auto* umem_buff = reinterpret_cast<unsigned char*>(mem_buff);
         uint32_t bits_read = file_reader.gcount();
         // decode block
-        std::string dec = rans.decode(mem_buff, bits_read);
+        std::string dec = rans.decode(umem_buff, bits_read);
         // save decoded block to file
         file_writer.write(dec.c_str(), static_cast<long>(dec.size()));
     }
@@ -162,7 +176,7 @@ int main(int argc, char** argv){
     opt = getopt_long(argc, argv, "vh:e:d", option_names, nullptr);
     switch (opt) {
         case 'v':
-            printf("0.1");
+            printf("1.0");
             return 0;
         case 'h':
             printf("Possible arguments:\n"
