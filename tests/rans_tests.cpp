@@ -6,8 +6,6 @@
 #include "gtest/gtest.h"
 #include "../rans.h"
 
-static const uint8_t MIN_CHAR_ABS = 128;
-
 
 class RANS_Coding_Test: public ::testing::Test{
 public:
